@@ -1,81 +1,35 @@
 #!/usr/bin/env python3
 """
-Use of regex in replacing occurences of certain field values
+    that returns the log message obfuscated
 """
 from typing import List
 import re
 import logging
-from os import environ
 import mysql.connector
+import os
 
 
 file = open('user_data.csv', 'r', encoding='utf-8')
 first_line = file.readline()
 args = first_line.split(',')
-PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+PII_FIELDS = tuple(args[0:-3])
 
 
 def filter_datum(fields: List[str], redaction: str,
                  message: str, separator: str) -> str:
-    """Returns regex obfuscated log messages"""
+    """return:  log message"""
     for field in fields:
-        message = re.sub(rf"{field}=(.*?){separator}",
-                         f"{field}={redaction}{separator}", message)
+        pattern = rf'({re.escape(field)}=)([^{re.escape(separator)}]*)'
+        message = re.sub(pattern, rf'\1{redaction}', message)
     return message
-
-
-def get_logger() -> logging.Logger:
-    """Returns a logging.Logger object"""
-    logger = logging.getLogger("user_data")
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(RedactingFormatter(list(PII_FIELDS)))
-    logger.addHandler(stream_handler)
-
-    return logger
-
-
-def get_db() -> mysql.connector.connection.MySQLConnection:
-    """Connection to MYSQL environment"""
-    username = environ.get("PERSONAL_DATA_DB_USERNAME", "root")
-    password = environ.get("PERSONAL_DATA_DB_PASSWORD", "")
-    host = environ.get("PERSONAL_DATA_DB_HOST", "localhost")
-    db_name = environ.get("PERSONAL_DATA_DB_NAME")
-
-    cnx = mysql.connector.connection.MySQLConnection(user=username,
-                                                     password=password,
-                                                     host=host,
-                                                     database=db_name)
-    return cnx
-
-
-def main():
-    """
-    obtain a database connection using get_db and retrieve all rows 
-    in the users table and display each row under a filtered format
-    """
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users;")
-    field_names = [i[0] for i in cursor.description]
-
-    logger = get_logger()
-
-    for row in cursor:
-        str_row = ''.join(f'{f}={str(r)}; ' for r, f in zip(row, field_names))
-        logger.info(str_row.strip())
-
-    cursor.close()
-    db.close()
 
 
 class RedactingFormatter(logging.Formatter):
     """ Redacting Formatter class
-        """
+    """
 
     REDACTION = "***"
+    # custom formatter instead of self.DEFAULT_FORMAT by default
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
     SEPARATOR = ";"
 
@@ -84,11 +38,42 @@ class RedactingFormatter(logging.Formatter):
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        """Returns filtered values from log records"""
-        record.msg = filter_datum(self.fields, self.REDACTION,
-                                  record.getMessage(), self.SEPARATOR)
-        return super(RedactingFormatter, self).format(record)
+        """method to filter values in incoming log records"""
+        filter_msg = filter_datum(self.fields, self.REDACTION,
+                                  record.msg, self.SEPARATOR)
+        record.msg = filter_msg
+        return super().format(record)
 
 
-if __name__ == '__main__':
-    main()
+def get_logger() -> logging.Logger:
+    """returns a logging.Logger object"""
+    # Create a logger and configure logging
+    logger = logging.getLogger("user_data")
+    # set logging level
+    logger.setLevel(logging.INFO)
+    # prevents propagate messages to other loggers
+    # set propagate to False
+    logger.propagate = False
+    # #create handler
+    handler = logging.StreamHandler()
+    formatter = RedactingFormatter(fields=PII_FIELDS)
+    handler.setFormatter(formatter)
+    # add handler
+    logger.addHandler(handler)
+
+    return logger
+
+
+def get_db() -> mysql.connector.connection.MySQLConnection:
+    """connector to database"""
+    try:
+        db = mysql.connector.connect(
+            host=os.getenv('PERSONAL_DATA_DB_HOST'),
+            user=os.getenv('PERSONAL_DATA_DB_USERNAME'),
+            password=os.getenv('PERSONAL_DATA_DB_PASSWORD'),
+            database=os.getenv('PERSONAL_DATA_DB_NAME')
+        )
+        return db
+    except mysql.connector.Error as error:
+        print(error)
+        return None
