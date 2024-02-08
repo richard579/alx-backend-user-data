@@ -14,7 +14,7 @@ PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 def filter_datum(fields: List[str], redaction: str,
                  message: str, separator: str) -> str:
-    """Returns a log message obfuscated."""
+    """Returns regex obfuscated log messages"""
     for field in fields:
         message = re.sub(rf"{field}=(.*?){separator}",
                          f"{field}={redaction}{separator}", message)
