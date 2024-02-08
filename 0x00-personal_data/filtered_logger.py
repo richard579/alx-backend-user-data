@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    that returns the log message obfuscated
+    Returns the log message obfuscated
 """
 from typing import List
 import re
@@ -17,7 +17,7 @@ PII_FIELDS = tuple(args[0:-3])
 
 def filter_datum(fields: List[str], redaction: str,
                  message: str, separator: str) -> str:
-    """return:  log message"""
+    """Returns log message"""
     for field in fields:
         pattern = rf'({re.escape(field)}=)([^{re.escape(separator)}]*)'
         message = re.sub(pattern, rf'\1{redaction}', message)
@@ -29,7 +29,6 @@ class RedactingFormatter(logging.Formatter):
     """
 
     REDACTION = "***"
-    # custom formatter instead of self.DEFAULT_FORMAT by default
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
     SEPARATOR = ";"
 
@@ -47,18 +46,12 @@ class RedactingFormatter(logging.Formatter):
 
 def get_logger() -> logging.Logger:
     """returns a logging.Logger object"""
-    # Create a logger and configure logging
     logger = logging.getLogger("user_data")
-    # set logging level
     logger.setLevel(logging.INFO)
-    # prevents propagate messages to other loggers
-    # set propagate to False
     logger.propagate = False
-    # #create handler
     handler = logging.StreamHandler()
     formatter = RedactingFormatter(fields=PII_FIELDS)
     handler.setFormatter(formatter)
-    # add handler
     logger.addHandler(handler)
 
     return logger
