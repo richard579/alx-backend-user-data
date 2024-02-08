@@ -9,7 +9,10 @@ from os import environ
 import mysql.connector
 
 
-PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+file = open('user_data.csv', 'r', encoding='utf-8')
+first_line = file.readline()
+args = first_line.split(',')
+PII_FIELDS = tuple("name", "email", "phone", "ssn", "password")
 
 
 def filter_datum(fields: List[str], redaction: str,
@@ -87,5 +90,5 @@ class RedactingFormatter(logging.Formatter):
         return super(RedactingFormatter, self).format(record)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
