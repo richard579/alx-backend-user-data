@@ -17,7 +17,7 @@ PII_FIELDS = tuple(args[0:-3])
 
 def filter_datum(fields: List[str], redaction: str,
                  message: str, separator: str) -> str:
-    """Returns log message"""
+    """returns log message"""
     for field in fields:
         pattern = rf'({re.escape(field)}=)([^{re.escape(separator)}]*)'
         message = re.sub(pattern, rf'\1{redaction}', message)
@@ -25,10 +25,11 @@ def filter_datum(fields: List[str], redaction: str,
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class
+    """Redacting Formatter class
     """
 
     REDACTION = "***"
+    # custom formatter instead of self.DEFAULT_FORMAT by default
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
     SEPARATOR = ";"
 
@@ -37,7 +38,7 @@ class RedactingFormatter(logging.Formatter):
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        """method to filter values in incoming log records"""
+        """Method to filter values in incoming log records"""
         filter_msg = filter_datum(self.fields, self.REDACTION,
                                   record.msg, self.SEPARATOR)
         record.msg = filter_msg
@@ -46,12 +47,18 @@ class RedactingFormatter(logging.Formatter):
 
 def get_logger() -> logging.Logger:
     """returns a logging.Logger object"""
+    # Create a logger and configure logging
     logger = logging.getLogger("user_data")
+    # set logging level
     logger.setLevel(logging.INFO)
+    # prevents propagate messages to other loggers
+    # set propagate to False
     logger.propagate = False
+    # #create handler
     handler = logging.StreamHandler()
     formatter = RedactingFormatter(fields=PII_FIELDS)
     handler.setFormatter(formatter)
+    # add handler
     logger.addHandler(handler)
 
     return logger
@@ -70,4 +77,3 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     except mysql.connector.Error as error:
         print(error)
         return None
-
