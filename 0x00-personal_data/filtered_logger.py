@@ -12,7 +12,7 @@ import mysql.connector
 file = open('user_data.csv', 'r', encoding='utf-8')
 first_line = file.readline()
 args = first_line.split(',')
-PII_FIELDS = tuple("name", "email", "phone", "ssn", "password")
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
 def filter_datum(fields: List[str], redaction: str,
