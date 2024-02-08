@@ -77,3 +77,7 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     except mysql.connector.Error as error:
         print(error)
         return None
+
+
+if __name__ == '__main__':
+    main()
