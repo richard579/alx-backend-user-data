@@ -62,7 +62,7 @@ class DB:
         """
         user = self.find_user_by(id=user_id)
 
-        column_names = User.__table__.column.keys()
+        column_names = User.__table__.columns.keys()
         for key in kwargs.keys():
             if key not in column_names:
                 raise ValueError
@@ -70,4 +70,4 @@ class DB:
         for key, value in kwargs.items():
             setattr(user, key, value)
 
-        self.__session.commit()
+        self._session.commit()
